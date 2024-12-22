@@ -17,6 +17,7 @@ static vm_page_for_families_t *first_vm_page_for_families = NULL;
 void mm_init()
 {
     SYSTEM_PAGE_SIZE = getpagesize();   /* This will return the size of 1 VM Page*/
+    printf("VM Page size = %lu\n", SYSTEM_PAGE_SIZE);
 }
 
 //Request a virtual mem page from the virtual add space of a process from the kernel
@@ -55,6 +56,7 @@ static void mm_return_vm_page_to_kernel(void *vm_page, int units)
 void mm_instantiate_new_page_family(char *struct_name, uint32_t struct_size)
 {
     printf("Struct Name - %s\n", struct_name);
+    printf("Struct Size : %u\n", struct_size);
     vm_page_family_t *vm_page_family_curr = NULL;
     vm_page_for_families_t *new_vm_page_for_famililes = NULL;
 
@@ -74,8 +76,7 @@ void mm_instantiate_new_page_family(char *struct_name, uint32_t struct_size)
         strncpy(first_vm_page_for_families->vm_page_family[0].struct_name, struct_name, MM_MAX_STRUCT_NAME);
         first_vm_page_for_families->vm_page_family[0].struct_size = struct_size;
         first_vm_page_for_families->vm_page_family[0].first_page = NULL;
-        init_glthread(&first_vm_page_for_families->vm_page_family[0].free_block_priority_list_head,
-                        offsetof(vm_page_family_t, free_block_priority_list_head));
+        init_glthread(&first_vm_page_for_families->vm_page_family[0].free_block_priority_list_head);
     }
     else{
         uint32_t count = 0;
@@ -104,8 +105,7 @@ void mm_instantiate_new_page_family(char *struct_name, uint32_t struct_size)
         strncpy(vm_page_family_curr->struct_name, struct_name, MM_MAX_STRUCT_NAME);
         vm_page_family_curr->struct_size = struct_size;
         vm_page_family_curr->first_page = NULL;
-        init_glthread(&first_vm_page_for_families->vm_page_family[0].free_block_priority_list_head,
-                        offset_of(vm_page_family_t, free_block_priority_list_head));
+        init_glthread(&first_vm_page_for_families->vm_page_family[0].free_block_priority_list_head);
     }
     //vm_page_family_curr->first_page = NULL;
 }
@@ -134,17 +134,20 @@ vm_page_family_t* lookup_page_family_by_name(char *struct_name)
 {
     vm_page_family_t *vm_page_family_curr = NULL;   
     vm_page_for_families_t *vm_page_for_families_curr = NULL;
-
+    
     for(vm_page_for_families_curr=first_vm_page_for_families; vm_page_for_families_curr ;
                                 vm_page_for_families_curr=vm_page_for_families_curr->next)
     {
         ITERATE_PAGE_FAMILIES_BEGIN(first_vm_page_for_families, vm_page_family_curr){
 
+            printf("%s page_family_struct_name %sd\n",vm_page_family_curr->struct_name, struct_name);
             if(strncmp(vm_page_family_curr->struct_name, struct_name, MM_MAX_STRUCT_NAME) == 0)
                 return vm_page_family_curr;
+            
 
         }ITERATE_PAGE_FAMILIES_END(first_vm_page_for_families, vm_page_family_curr)
     }
+    
 
     return NULL;
 }
@@ -191,8 +194,7 @@ vm_page_t *allocate_vm_page(vm_page_family_t *vm_page_family)
 
     vm_page->block_meta_data.block_size = mm_max_page_allocatable_memory(1);
     vm_page->block_meta_data.offset = offset_of(vm_page_t, block_meta_data);
-    init_glthread(&vm_page->block_meta_data.priority_thread_glue,
-                    offset_of(block_meta_data_t, priority_thread_glue));
+    init_glthread(&vm_page->block_meta_data.priority_thread_glue);
 
     vm_page->next = NULL;
     vm_page->prev = NULL;
@@ -256,12 +258,18 @@ static int free_blocks_comparison_function( void *_block_meta_data1, void *_bloc
     return 0;   
 }
 
+void print_priority_queue(void *_block_meta_data1)
+{
+    block_meta_data_t *block_meta_data1 = (block_meta_data_t *)_block_meta_data1;
+    printf("Free Block size - %lu \n", block_meta_data1->block_size);
+}
+
 /* Insert free meta block into the priority queues of the page family */
 static void mm_add_free_block_meta_data_to_free_block_list(
                 vm_page_family_t *vm_page_family,
                 block_meta_data_t *free_block){
 
-    if(free_block->is_free == MM_TRUE)
+    if(!free_block->is_free == MM_TRUE)
     {
         printf("The block to be added to free_blocks is not free");
         assert(1);
@@ -274,20 +282,38 @@ static void mm_add_free_block_meta_data_to_free_block_list(
 
 /* Returns a pointer to the first node present in the priority queue*/
 static inline block_meta_data_t *mm_get_biggest_free_block_page_family(vm_page_family_t *vm_page_family){
-    return vm_page_family->free_block_priority_list_head.head;
+    //return vm_page_family->free_block_priority_list_head.head;
+    //return vm_page_family->free_block_priority_list_head.right;
+
+    //printf("Entered mm_get_biggest_free_block_page_family\n");
+    glthread_t *biggest_free_block=vm_page_family->free_block_priority_list_head.right;
+    if(biggest_free_block)
+    {
+        return glthread_to_block_meta_data(biggest_free_block);
+    }
+
+    //printf("Returning NULL as no free block\n");
+    return NULL;
+
 }
 
 /*  Function to mark block_meta_data as being allocated for 
     size bytes of application data. Return TRUE if 
     block allocation succeeds */
+
 static vm_bool_t
 mm_split_free_data_block_for_allocation(vm_page_family_t *vm_page_family,
                                         block_meta_data_t *block_meta_data,
                                         uint32_t size){
     
     block_meta_data_t *next_block_meta_data = NULL;
-    
+    //printf("%ld\n",block_meta_data->block_size);
+    //assert((block_meta_data->is_free == MM_TRUE));
+    //(block_meta_data->is_free == MM_FALSE);
+    //printf("block is already allocated \n");
     assert(block_meta_data->is_free == MM_TRUE);
+    //printf("block size is less than the requested size\n");
+    assert(block_meta_data->block_size >= size);
 
     if(block_meta_data->block_size < size){
         return MM_FALSE;
@@ -299,8 +325,8 @@ mm_split_free_data_block_for_allocation(vm_page_family_t *vm_page_family,
     block_meta_data->block_size = size;
     /*block_meta_data->offset = remains same */
     //remove_glthread(&block_meta_data->priority_thread_glue);
-    glthread_remove(&block_meta_data->priority_thread_glue,
-                    &vm_page_family->free_block_priority_list_head.head);
+    //glthread_remove(&block_meta_data->priority_thread_glue,&vm_page_family->free_block_priority_list_head.head);
+    remove_glthread(&block_meta_data->priority_thread_glue);
 
     /*Case 1 : No Split */
     if( remaining_size == 0){
@@ -313,10 +339,10 @@ mm_split_free_data_block_for_allocation(vm_page_family_t *vm_page_family,
 
         next_block_meta_data = NEXT_META_BLOCK_BY_SIZE(block_meta_data);
         next_block_meta_data->is_free = MM_TRUE;
+        next_block_meta_data->block_size = remaining_size - sizeof(block_meta_data_t);
         next_block_meta_data->offset = block_meta_data->offset+
                                         sizeof(block_meta_data_t)+block_meta_data->block_size;
-        init_glthread(&next_block_meta_data->priority_thread_glue,
-                        offset_of(block_meta_data_t, priority_thread_glue));
+        init_glthread(&next_block_meta_data->priority_thread_glue);
         mm_add_free_block_meta_data_to_free_block_list(
                          vm_page_family, next_block_meta_data);
         mm_bind_blocks_for_allocation(block_meta_data, next_block_meta_data);
@@ -335,10 +361,10 @@ mm_split_free_data_block_for_allocation(vm_page_family_t *vm_page_family,
     else{
         next_block_meta_data = NEXT_META_BLOCK_BY_SIZE(block_meta_data);
         next_block_meta_data->is_free = MM_TRUE;
+        next_block_meta_data->block_size = remaining_size - sizeof(block_meta_data_t);
         next_block_meta_data->offset = block_meta_data->offset+
                                         sizeof(block_meta_data_t)+block_meta_data->block_size;
-        init_glthread(&next_block_meta_data->priority_thread_glue,
-                        offset_of(block_meta_data_t, priority_thread_glue));
+        init_glthread(&next_block_meta_data->priority_thread_glue);
         mm_add_free_block_meta_data_to_free_block_list(
                          vm_page_family, next_block_meta_data);
         mm_bind_blocks_for_allocation(block_meta_data, next_block_meta_data);
@@ -351,38 +377,66 @@ mm_split_free_data_block_for_allocation(vm_page_family_t *vm_page_family,
 }
 
 
+static vm_page_t *mm_family_new_page_add(vm_page_family_t *vm_page_family)
+{
+    vm_page_t *new_vm_page = allocate_vm_page(vm_page_family);
+
+    if(!new_vm_page)
+        return NULL;
+    
+    /*It has one free block which should be added to the free block list*/
+    mm_add_free_block_meta_data_to_free_block_list(vm_page_family, &new_vm_page->block_meta_data);
+    
+    return new_vm_page;
+}
+
+
 static block_meta_data_t *
-mm_allocate_free_data_block(vm_page_family_t *vm_page_family, uint32_t req_size){
+mm_allocate_free_data_block(vm_page_family_t *vm_page_family, uint32_t req_size, block_meta_data_t **block_meta_data){
 
     vm_bool_t status = MM_FALSE;
     vm_page_t *vm_page = NULL;
     block_meta_data_t *biggest_block_meta_data = 
                         mm_get_biggest_free_block_page_family(vm_page_family);
     
+    //printf("Inside mm_allocate_free_data_block: req-size: %lu \n", req_size);
     if(!biggest_block_meta_data || biggest_block_meta_data->block_size < req_size){
-
+        //printf("biggest free data block is not enough\n");
         /* Add a new page to the page family to satify the request */
         vm_page = mm_family_new_page_add(vm_page_family);
 
         /* Allocate the free block from theis page*/
-        status = mm_split_free_data_data_block_for_allocation(vm_page_family, 
+        //mm_split_free_data_block_for_allocation
+        status = mm_split_free_data_block_for_allocation(vm_page_family, 
                         &vm_page->block_meta_data, req_size);
-        
+        //status = mm_split_free_data_block_for_allocation(vm_page_family, 
+        //                &vm_page->block_meta_data, req_size);
+        /*
         if(status)
             return &vm_page->block_meta_data;
+            */
+        if(status == MM_FALSE){
+            *block_meta_data = NULL;
+             mm_vm_page_delete_and_free(vm_page);
+             return NULL;
+        }
 
+        *block_meta_data = &vm_page->block_meta_data;
+        return vm_page;
+    }
+
+   /*The biggest block meta data can satisfy the request*/
+    status = mm_split_free_data_block_for_allocation(vm_page_family, 
+        biggest_block_meta_data, req_size);
+        
+    if(status == MM_FALSE){
+        *block_meta_data = NULL;
         return NULL;
     }
-    /* The biigels free meta data block can staisfy the request */
-    if(biggest_block_meta_data){
-        status = mm_split_free_data_block_for_allocation(vm_page_family,
-                        &vm_page->block_meta_data, req_size);
-    }
 
-    if(status)
-        return biggest_block_meta_data;
+    *block_meta_data = biggest_block_meta_data;
 
-    return NULL;
+    return MM_GET_PAGE_FROM_META_BLOCK(biggest_block_meta_data);
 
 }
 
@@ -400,23 +454,27 @@ xcalloc(char *struct_name, int units){
     }
 
     /* Check if application is demanding a chunk of size which exceeds the limit of empty VM data page*/
-    if(units * pg_family->struct_size > MAX_PAGE_ALLOCATABLE_MEMORY(1)){
+    //mm_max_page_allocatable_memory
+    //(units * pg_family->struct_size > MAX_PAGE_ALLOCATABLE_MEMORY(1)){
+    if(units * pg_family->struct_size > mm_max_page_allocatable_memory(1)){
         
         printf("Error : Memory Requested Exceeds Page Size\n");
         return NULL;
     }
 
     /* Find the page which can satisfy the request */
-    block_meta_data_t *free_block_meta_data = NULL;
+    block_meta_data_t *free_block_meta_data;
 
-    free_block_meta_data = mm_allocate_free_data_block(pg_family, units * pg_family->struct_size);
-
+    free_block_meta_data = mm_allocate_free_data_block(pg_family, units * pg_family->struct_size, &free_block_meta_data);
+    
+    //print_glthread(&pg_family->free_block_priority_list_head, print_priority_queue);
     // this meta block is guardian of the data block which is allocated to the application
+    // starting address of the free data block that is why free_block_meta_data+1
     if(free_block_meta_data){
         memset((char *)(free_block_meta_data+1), 0, free_block_meta_data->block_size);
         return (void *)(free_block_meta_data + 1);
     }
-
+    
     return NULL;
 }
 

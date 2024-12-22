@@ -33,9 +33,9 @@ int main(int argc, char **argv)
     MM_REG_STRUCT(student2_t);
     mm_print_registered_page_families();
 
-    XCALLOC(1, empt_t);
-    XCALLOC(1, empt_t);
-    XCALLOC(1, empt_t);
+    XCALLOC(1, emp_t);
+    XCALLOC(1, emp_t);
+    XCALLOC(1, emp_t);
 
     XCALLOC(1, student_t);
     XCALLOC(1, student_t);
@@ -47,8 +47,8 @@ int main(int argc, char **argv)
     }
     */
 
-    scanf("\n");
-    mm_print_memory_usage(0);
-    mm_print_block_usage();
+    //scanf("\n");
+    //mm_print_memory_usage(0);
+    //mm_print_block_usage();
     return 0;
 }

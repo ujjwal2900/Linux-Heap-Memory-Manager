@@ -1,6 +1,8 @@
 
 #include "gluethread/glthread.h"
 #include <stdint.h>
+#include <unistd.h> 
+
 
 typedef enum{
     MM_FALSE,
@@ -17,7 +19,7 @@ typedef struct block_meta_data_
     struct block_meta_data_ *next_block; /* ptr to the above block */
     uint32_t offset;        /* Offse of the Meta block */
 }block_meta_data_t;
-GLTHREAD_TO_STRUCT(glthread_to_block_meta_data, block_meta_data, priority_thread_glue, glthread_ptr);
+
 
 /*structure which represents a VM Page*/
 typedef struct vm_page_ {
@@ -27,6 +29,7 @@ typedef struct vm_page_ {
     block_meta_data_t block_meta_data;
     char page_memory[0];    /*first data block in vm page*/
 }vm_page_t;
+GLTHREAD_TO_STRUCT(glthread_to_block_meta_data, block_meta_data_t, priority_thread_glue, glthread_ptr);
 
 #define MM_MAX_STRUCT_NAME 64
 typedef struct vm_page_family_
@@ -69,7 +72,7 @@ vm_page_family_t* lookup_page_family_by_name(char *struct_name);
 
 //Returns the offset of a field in a structure
 #define offset_of(container_structure, field_name) \
-                (uint32_t)&((container_structure *)0)->field_name
+                (size_t)&((container_structure *)0)->field_name
 
 //Returns the starting address of VM Page
 #define MM_GET_PAGE_FROM_META_BLOCK(block_meta_data_ptr)    \
@@ -102,12 +105,15 @@ vm_page_family_t* lookup_page_family_by_name(char *struct_name);
 
 //Function to check if vm_page_is_empty
 vm_bool_t mm_is_vm_page_empty(vm_page_t *vm_page);
+static vm_bool_t mm_split_free_data_block_for_allocation(vm_page_family_t *vm_page_family,
+                                        block_meta_data_t *block_meta_data,
+                                        uint32_t size);
 
 //Macro to mark VM data page as empty
 #define MARK_VM_PAGE_EMPTY(vm_page_t_ptr)           \
         vm_page_t_ptr->block_meta_data.next_block = NULL;   \
         vm_page_t_ptr->block_meta_data.prev_block = NULL;   \
-        vm_page_t_ptr->block_meta_data.is_free = MM_TRUE  
+        vm_page_t_ptr->block_meta_data.is_free = MM_TRUE    \
 
 
 //Macro to iterate over all VM Data pages for a given page family
@@ -131,7 +137,6 @@ static void mm_add_free_block_meta_data_to_free_block_list(
                 block_meta_data_t *free_block
 );
 
-static inline block_meta_data_t* mm_get_biggest_free_block_page_family(vm_page_family_t *vm_page_family);
 
 /*
 #define mm_bind_blocks_for_allocation(allocated_meta_block, free_meta_block)    \

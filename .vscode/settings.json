@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "mm.h": "c",
-        "glthread.h": "c"
-    }
+        "glthread.h": "c",
+        "mman.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }
