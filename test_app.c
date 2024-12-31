@@ -33,22 +33,28 @@ int main(int argc, char **argv)
     MM_REG_STRUCT(student2_t);
     mm_print_registered_page_families();
 
-    XCALLOC(1, emp_t);
-    XCALLOC(1, emp_t);
-    XCALLOC(1, emp_t);
+    emp_t *emp1 = XCALLOC(1, emp_t);
+    emp_t *emp2 = XCALLOC(1, emp_t);
+    emp_t *emp3 = XCALLOC(1, emp_t);
 
-    XCALLOC(1, student_t);
-    XCALLOC(1, student_t);
+    student_t *stud1 = XCALLOC(1, student_t);
+    student_t *stud2 = XCALLOC(1, student_t);
     
+    mm_print_memory_usage(0);
+
+
+    XFREE(emp1);
+    XFREE(emp2);
+    XFREE(stud2);
     /*
-    for(int i=0;i<500;i++){
-        XCALLOC(1,emp_t);
+    for(int i=0;i<40;i++){
+        //XCALLOC(1,emp_t);
         XCALLOC(1,student_t);
     }
     */
 
     //scanf("\n");
-    //mm_print_memory_usage(0);
+    mm_print_memory_usage(0);
     //mm_print_block_usage();
     return 0;
 }

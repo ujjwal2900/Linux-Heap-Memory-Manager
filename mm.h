@@ -76,7 +76,7 @@ vm_page_family_t* lookup_page_family_by_name(char *struct_name);
 
 //Returns the starting address of VM Page
 #define MM_GET_PAGE_FROM_META_BLOCK(block_meta_data_ptr)    \
-        ((void *)((char *)block_meta_data_ptr-block_meta_data_ptr->offset))
+        ((vm_page_t *)((char *)(block_meta_data_ptr)-block_meta_data_ptr->offset))
 
 //Return the next meta block ptr
 #define NEXT_META_BLOCK(block_meta_data_ptr)    \
@@ -91,6 +91,7 @@ vm_page_family_t* lookup_page_family_by_name(char *struct_name);
 #define PREV_META_BLOCK(block_meta_data_ptr)    \
                 block_meta_data_ptr->prev_block
 
+/*
 #define mm_bind_blocks_for_allocation(allocated_meta_block, free_meta_block)                \
         allocated_meta_block->prev_block = free_meta_block->prev_block;                        \
         if(free_meta_block->prev_block)                                                       \
@@ -99,9 +100,8 @@ vm_page_family_t* lookup_page_family_by_name(char *struct_name);
         free_meta_block->prev_block = allocated_meta_block;                                     \
         free_meta_block->block_size = free_meta_block->block_size-allocated_meta_block->block_size;   \
         if(free_meta_block->next_block)                                                         \
-            free_meta_block->next_block->prev_block = free_meta_block
-
-
+            free_meta_block->next_block->prev_block = free_meta_block                           \
+*/
 
 //Function to check if vm_page_is_empty
 vm_bool_t mm_is_vm_page_empty(vm_page_t *vm_page);
@@ -138,14 +138,14 @@ static void mm_add_free_block_meta_data_to_free_block_list(
 );
 
 
-/*
+
 #define mm_bind_blocks_for_allocation(allocated_meta_block, free_meta_block)    \
     free_meta_block->prev_block = allocated_meta_block;                         \
     free_meta_block->next_block = allocated_meta_block->next_block;             \
     allocated_meta_block->next_block = free_meta_block;                         \
     if(free_meta_block->next_block)                                             \
         free_meta_block->next_block->prev_block = free_meta_block
-*/
+
 
 /*                      
         uint32_t no_free_blocks = 0;                                    
