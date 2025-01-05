@@ -1,4 +1,4 @@
-Heap Memory Management in Linux
+# Heap Memory Management in Linux
 
 Heap Memory of a process is the continuous part of the virtual address space of the process from which it claims and reclaims memory during runtime.
 Glibc APIs to harness this function:
@@ -8,11 +8,11 @@ Unlike stack memory which is reclaimed back upon the return of the function auto
 In C / Cpp allocation and deallocation of memory is performed with the help of malloc, calloc, free and realloc calls.
 This project implements a Linux Heap Memory Manager which caters to the memory requirements of the application. It takes care of allocation and deallocation of the memory requested. It can be used to minimize memory fragmentation issues, can be used to detect memory Leaks, keep track of the memory being used by the different structures in our application and optimize our application with memory requirement issues.
 
-Overview of Memory Management in Linux
+### Overview of Memory Management in Linux
 
 ![image](https://github.com/user-attachments/assets/8fef1e78-f092-4d15-acd5-e2d25828de59)
 
-High Level Diagram of our Linux Memory Manager 
+### High Level Diagram of our Linux Memory Manager 
 
 ![image](https://github.com/user-attachments/assets/4e4b5e13-d295-4bee-8fe1-20c6236ae3a1)
 
@@ -25,7 +25,7 @@ The Linux Memory Manager Performs the following operations to satisfy the memory
   •	Maintains collection of VM Pages
   •	Collect statistics of Memory usage
 
-Output of Memory statistics using LMM :
+### Output of Memory statistics using LMM :
 
 ![Allocation_and_deallocation](https://github.com/user-attachments/assets/f011b923-d935-4211-8faa-ff0406664fc2)
 
