@@ -40,21 +40,23 @@ int main(int argc, char **argv)
     student_t *stud1 = XCALLOC(1, student_t);
     student_t *stud2 = XCALLOC(1, student_t);
     
-    mm_print_memory_usage(0);
+    //mm_print_memory_usage(0);
 
 
-    XFREE(emp1);
-    XFREE(emp2);
-    XFREE(stud2);
-    /*
-    for(int i=0;i<40;i++){
-        //XCALLOC(1,emp_t);
+    xfree(emp1);
+    //mm_print_memory_usage(0);
+    xfree(emp3);
+    
+    #if 0
+    for(int i=0;i<90;i++){
+        XCALLOC(1,emp_t);
         XCALLOC(1,student_t);
     }
-    */
+    #endif
 
-    //scanf("\n");
+    xfree(stud1);
+
     mm_print_memory_usage(0);
-    //mm_print_block_usage();
+    mm_print_block_usage();
     return 0;
 }
