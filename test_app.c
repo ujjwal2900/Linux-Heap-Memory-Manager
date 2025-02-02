@@ -36,20 +36,20 @@ int main(int argc, char **argv)
     emp_t *emp1 = XCALLOC(1, emp_t);
     emp_t *emp2 = XCALLOC(1, emp_t);
     emp_t *emp3 = XCALLOC(1, emp_t);
+    emp_t *emp4 = XCALLOC(1, emp_t);
 
     student_t *stud1 = XCALLOC(1, student_t);
     student_t *stud2 = XCALLOC(1, student_t);
     
     //mm_print_memory_usage(0);
 
-
+    mm_print_memory_usage(0);
     xfree(emp1);
-    //mm_print_memory_usage(0);
-    xfree(emp3);
+    xfree(emp2);
+    //mm_print_block_usage();
     
-    #if 0
-    for(int i=0;i<90;i++){
-        XCALLOC(1,emp_t);
+    #if 1
+    for(int i=0;i<50;i++){
         XCALLOC(1,student_t);
     }
     #endif
